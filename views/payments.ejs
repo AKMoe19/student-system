@@ -1,0 +1,161 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-panel">
+
+    <div class="container pb-5">
+    
+      <!-- Title & Total Income Header -->
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-2 mb-4 gap-3">
+        <div>
+          <h4 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Payment records
+          </h4>
+          <small class="text-muted">You can search for deposit or debt payment records.</small>
+        </div>
+        
+        <div class="d-flex gap-2">
+          <span class="badge bg-primary fs-6 px-3 py-2 d-flex align-items-center">
+            <i class="fa-solid fa-list-check me-2"></i> Transactions : <%= payments.length %>
+          </span>
+          <span class="badge bg-success fs-6 px-3 py-2 d-flex align-items-center">
+            <i class="fa-solid fa-wallet me-2"></i> Total : <%= totalAmount.toLocaleString() %> Ks
+          </span>
+        </div>
+      </div>
+
+      <!-- SEARCH & FILTER BAR -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body bg-white rounded">
+          <form action="/payments" method="GET" class="row g-2 align-items-center">
+            
+            <!-- Keyword Search Bar -->
+            <div class="col-lg-4 col-md-6">
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Student ID, Name, Course..." value="<%= search %>">
+              </div>
+            </div>
+
+            <!-- Specific Day Filter -->
+            <div class="col-lg-2 col-md-6">
+              <input type="date" name="date" class="form-control" value="<%= selectedDate %>" title="Select Specific Date">
+            </div>
+
+            <!-- Month Filter -->
+            <div class="col-lg-2 col-md-4">
+              <select name="month" class="form-select">
+                <option value="">-- All Months --</option>
+                <% const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; %>
+                <% months.forEach((m, idx) => { %>
+                  <option value="<%= idx + 1 %>" <%= selectedMonth == (idx + 1) ? 'selected' : '' %>><%= m %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Year Filter -->
+            <div class="col-lg-2 col-md-4">
+              <select name="year" class="form-select">
+                <option value="">-- All Years --</option>
+                <% const currentYear = new Date().getFullYear(); %>
+                <% for(let y = currentYear; y >= currentYear - 5; y--) { %>
+                  <option value="<%= y %>" <%= selectedYear == y ? 'selected' : '' %>><%= y %></option>
+                <% } %>
+              </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="col-lg-2 col-md-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary w-100 fw-bold">
+                <i class="fa-solid fa-magnifying-glass me-2"></i>Find
+              </button>
+              <a href="/payments" class="btn btn-outline-secondary" title="Reset Filters">
+                <i class="fa-solid fa-rotate-left"></i>
+              </a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- Payments Table -->
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>#</th>
+                  <th>Student ID</th>
+                  <th>Student Name</th>
+                  <th>Course & Class</th>
+                  <th>Payment Type</th>
+                  <th>Amount (Ks)</th>
+                  <th>Payment Method</th>
+                  <th>Date & Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!payments || payments.length === 0) { %>
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                      <i class="fa-solid fa-inbox fa-2x mb-2 d-block"></i>
+                      No Records!
+                    </td>
+                  </tr>
+                <% } else { %>
+                  <% payments.forEach((p, index) => { %>
+                    <% 
+                      const mmTime = new Date(p.createdAt).toLocaleString('en-GB', {
+                        timeZone: 'Asia/Yangon',
+                        year: 'numeric',
+                        month: 'short',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      });
+                    %>
+                    <tr>
+                      <td><%= index + 1 %></td>
+                      <td>
+                        <span class="badge bg-secondary font-monospace">
+                          <%= p.student ? p.student.studentId : 'N/A' %>
+                        </span>
+                      </td>
+                      <td><strong><%= p.student ? p.student.name : 'Unknown' %></strong></td>
+                      <td>
+                        <div class="fw-semibold"><%= p.enrollment ? p.enrollment.course : '-' %></div>
+                        <small class="text-muted"><%= p.enrollment ? p.enrollment.className : '' %></small>
+                      </td>
+                      <td>
+                        <% if (p.paymentType === 'Initial') { %>
+                          <span class="badge bg-info text-dark"><i class="fa-solid fa-user-plus me-2"></i>Initial Deposit</span>
+                        <% } else { %>
+                          <span class="badge bg-warning text-dark"><i class="fa-solid fa-hand-holding-dollar me-2"></i>Debt Payment</span>
+                        <% } %>
+                      </td>
+                      <td class="fw-bold text-success">
+                        <%= p.amount ? p.amount.toLocaleString() : 0 %> Ks
+                      </td>
+                      <td>
+                        <span class="badge bg-light text-dark border">
+                          <i class="fa-solid fa-credit-card me-1 text-primary"></i><%= p.paymentMethod %>
+                        </span>
+                      </td>
+                      <td class="small text-muted">
+                        <i class="fa-regular fa-clock me-2"></i><%= mmTime %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Information & Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f8f9fa; }
+    .profile-card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .stat-card { border-radius: 10px; border: none; }
+    .avatar-circle {
+      width: 80px; height: 80px; background-color: #0d6efd; color: white;
+      font-size: 32px; font-weight: bold; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-graduation-cap me-2"></i>Student Information</a>
+      <div class="d-flex align-items-center text-white">
+        <span class="me-3"><i class="bi bi-person-circle"></i> <%= user.username %> (<%= user.role %>)</span>
+        <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mb-5">
+    <div class="row g-4">
+      
+      <!-- Left Column: Personal Information -->
+      <div class="col-lg-4">
+        <div class="card profile-card p-4 text-center bg-white">
+
+          <div class="avatar-circle">
+            <%= student.name ? student.name.charAt(0).toUpperCase() : 'S' %>
+          </div>
+          <h4 class="fw-bold mb-1"><%= student.name %></h4>
+          <p class="text-muted mb-3"><span class="badge bg-secondary"><%= student.studentId %></span></p>
+          
+          <hr>
+
+          <div class="text-start fs-6">
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-person text-primary me-2"></i><strong>Father Name :</strong></span>
+              <span><%= student.fatherName || 'N/A' %></span>
+            </p>
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-telephone text-primary me-2"></i><strong>Phone :</strong></span>
+              <span><%= student.phone %></span>
+            </p>
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-telephone-plus text-primary me-2"></i><strong>Emergency Contact :</strong></span>
+              <span><%= student.emergencyPhone || 'N/A' %></span>
+            </p>
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-envelope text-primary me-2"></i><strong>Email :</strong></span>
+              <span><%= student.email || 'N/A' %></span>
+            </p>
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-card-text text-primary me-2"></i><strong>NRC :</strong></span>
+              <span><%= student.nrc || 'N/A' %></span>
+            </p>
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-gender-ambiguous text-primary me-2"></i><strong>Gender :</strong></span>
+              <span><%= student.gender || 'N/A' %></span>
+            </p>
+            <p class="mb-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-geo-alt text-primary me-2"></i><strong>Address :</strong></span>
+              <span class="text-end"><%= student.address || 'N/A' %></span>
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Column: Course Summary & Details -->
+      <div class="col-lg-8">
+        
+        <!-- Quick Payment Stats -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="card stat-card bg-primary text-white p-3 shadow-sm">
+              <h6 class="text-white-50">Total Fees</h6>
+              <h4 class="fw-bold mb-0"><%= summary.totalFees.toLocaleString() %></h4>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card stat-card bg-success text-white p-3 shadow-sm">
+              <h6 class="text-white-50">Initial Payment</h6>
+              <h4 class="fw-bold mb-0"><%= summary.totalPaid.toLocaleString() %></h4>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card stat-card bg-danger text-white p-3 shadow-sm">
+              <h6 class="text-white-50">Total Credit</h6>
+              <h4 class="fw-bold mb-0"><%= summary.totalRemaining.toLocaleString() %></h4>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <!-- Enrolled Courses Table -->
+        <div class="card profile-card p-4 bg-white mb-4">
+          <h5 class="fw-bold mb-3"><i class="bi bi-book me-2"></i>Your Courses</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+              <thead class="table-light">
+                <tr>
+                  <th>Course</th>
+                  <th>Class Room</th>
+                  <th>Start Date</th>
+                  <th>Course Fees</th>
+                  <th>Credit</th>
+                  <th>Status</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (enrollments.length > 0) { %>
+                  <% enrollments.forEach(item => { %>
+                    <tr>
+                      <td class="fw-bold"><%= item.course %></td>
+                      <td>
+                        <span class="badge bg-info text-dark"><%= item.className %></span>
+                        <% if (item.classroomStatus === 'Completed') { %>
+                          <span class="badge bg-success ms-1">Ended</span>
+                        <% } %>
+                      </td>
+                      <td><%= new Date(item.startDate).toLocaleDateString() %></td>
+                      <td><%= item.courseFee.toLocaleString() %> MMK</td>
+                      <td class="text-danger fw-bold"><%= item.remainingBalance.toLocaleString() %> MMK</td>
+                      <td>
+                        <% if (item.paymentStatus === 'Paid') { %>
+                          <span class="badge bg-success">Paid</span>
+                        <% } else if (item.paymentStatus === 'Credit') { %>
+                          <span class="badge bg-warning text-dark">Credit</span>
+                        <% } else { %>
+                          <span class="badge bg-danger">Unpaid</span>
+                        <% } %>
+                      </td>
+
+                      <!-- Certificate Download -->
+                      <td class="text-center">
+                        <% if (item.classroomStatus === 'Completed') { %>
+                          <!-- Class Completed ဖြစ်ပါက Cert Download ပွင့်မည် -->
+                          <a href="/student/certificate/download/<%= item._id %>" class="btn btn-sm btn-success shadow-sm">
+                            <i class="bi bi-unlock-fill me-1"></i> Crt Download
+                          </a>
+                        <% } else { %>
+                          <!-- Class မပြီးသေးပါက Lock ခတ်ထားမည် -->
+                          <button class="btn btn-sm btn-secondary shadow-sm" disabled title="Class Room သင်တန်း မပြီးဆုံးသေးပါသဖြင့် ဒေါင်းလုဒ်ဆွဲ၍ မရသေးပါ">
+                            <i class="bi bi-lock-fill me-1"></i> Crt Download
+                          </button>
+                        <% } %>
+                      </td>
+                      
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">တက်ရောက်ထားသော သင်တန်းမရှိသေးပါ။</td>
+                  </tr>
+                <% } %>
+              </tbody>
+
+            </table>
+          </div>
+        </div>
+
+        <!-- Payment History Table -->
+        <div class="card profile-card p-4 bg-white">
+          <h5 class="fw-bold mb-3"><i class="bi bi-receipt me-2"></i>Payment Records</h5>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Payment Type</th>
+                  <th>Payment Method</th>
+                  <th class="text-end">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (payments.length > 0) { %>
+                  <% payments.forEach(pay => { %>
+                    <tr>
+                      <td><%= new Date(pay.createdAt).toLocaleDateString() %></td>
+                      <!-- <td><%= pay.paymentType %></td> -->
+                      <td><%= pay.paymentType === 'Balance Pay' ? 'Debt Payment' : pay.paymentType %></td>
+                      <td><%= pay.paymentMethod %></td>
+                      <td class="text-success fw-bold text-end">+<%= pay.amount.toLocaleString() %></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">ငွေပေးချေမှု မှတ်တမ်း မရှိသေးပါ။</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,1001 @@
+
+  <style>
+    body { background-color: #f4f6f9; }
+    .student-id-link { cursor: pointer; font-weight: bold; text-decoration: none; }
+    .student-id-link:hover { text-decoration: underline; }
+    
+    /* Live Search Suggestion Box Style */
+    .search-suggestion-box {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1050;
+      background: #ffffff;
+      border: 1px solid #ced4da;
+      border-radius: 0 0 0.375rem 0.375rem;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+    .suggestion-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f1f1;
+      font-size: 0.9rem;
+    }
+    .suggestion-item:hover {
+      background-color: #e9ecef;
+      color: #0d6efd;
+    }
+
+    /* Receipt Watermark Style */
+    .receipt-container {
+      position: relative;
+      overflow: hidden;
+      background-color: #ffffff;
+    }
+    .receipt-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: rgba(13, 110, 253, 0.08);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Strict Single-Page Print Fixing (Align Top) */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      html, body {
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+      }
+      body * {
+        visibility: hidden;
+      }
+      #receiptModal, #receiptModal * {
+        visibility: visible;
+      }
+      #receiptModal {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+      #receiptModal .modal-dialog {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 15px 20px 0 20px !important;
+      }
+      #receiptModal .modal-content {
+        border: none !important;
+        box-shadow: none !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .receipt-watermark {
+        color: rgba(0, 0, 0, 0.06) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-panel">
+
+  <div class="container mt-2">
+    <button class="btn btn-outline-primary fw-bold me-2" data-bs-toggle="modal" data-bs-target="#newStudentModal">
+      <i class="fa-solid fa-user-plus text-primary me-2"></i>Add New Student
+      </button>
+
+      <button class="btn btn-outline-warning fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+        <i class="fa-solid fa-book-medical me-2"></i>Old Student
+      </button>
+  </div>
+
+  <div class="container pb-5">
+    
+    <!-- Database ID Search Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <form action="/" method="GET" class="row g-2 align-items-center">
+          <div class="col-md-9">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-primary"></i></span>
+              <input type="text" name="searchId" class="form-control" placeholder="Search by ID, Name or Phone..." value="<%= searchId %>">
+            </div>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="fa-solid fa-search me-1"></i> Search</button>
+
+            <!-- Reset Searching -->
+            <% if (searchId) { %>
+              <a href="/" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate-left"></i></a>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Student Enrollment Table -->
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fa-solid fa-list me-2"></i>Student List (<%= enrollments.length %>)</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-secondary">
+              <tr>
+                <th>Student ID</th>
+                <th>Name / Father</th>
+                <th>Phone / Emergency Call</th>
+                <th>Course & Class Room</th>
+                <th>Class Status</th>
+                <th>Course Fees</th>
+                <th>Status</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (enrollments.length === 0) { %>
+                <tr><td colspan="8" class="text-center py-4 text-muted">ရှာဖွေမှု အချက်အလက် မရှိပါ။</td></tr>
+              <% } else { %>
+                <% enrollments.forEach(item => { %>
+                  <% 
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const startDate = new Date(item.startDate);
+                    startDate.setHours(0, 0, 0, 0);
+
+                    const isUpcoming = startDate > today;
+                  %>
+                  <tr>
+
+                    <!-- Student ID -->
+                    <td>
+                      <a href="javascript:void(0)" class="student-id-link text-primary" onclick="openStudentViewModal('<%= item.student ? item.student.studentId : '' %>')">
+                        <i class="fa-solid fa-id-badge me-1"></i><%= item.student ? item.student.studentId : 'N/A' %>
+                      </a>
+                    </td>
+
+                    <!-- Name & Father Name -->
+                    <td>
+                      <div class="fw-bold"><%= item.student ? item.student.name : 'Unknown' %></div>
+                      <small class="text-muted">Father : <%= item.student ? item.student.fatherName : '-' %></small>
+                    </td>
+
+                    <!-- Phone & Emergency Call -->
+                    <td>
+                      <div><%= item.student ? item.student.phone : '-' %></div>
+                      <small class="text-danger">Emc Call : <%= item.student ? item.student.emergencyPhone : '-' %></small>
+                    </td>
+
+                    <!-- Course & Class -->
+                    <td>
+                      <div class="fw-bold text-primary"><%= item.course %></div>
+                      <small class="badge bg-secondary"><%= item.className %></small>
+                    </td>
+
+                    <!-- Class Status -->
+                    <td>
+                      <% if (item.classStatus === 'New') { %>
+                        <span class="badge bg-info text-dark">
+                          <i class="fa-solid fa-sparkles me-1"></i> New
+                        </span>
+                      <% } else if (item.classStatus === 'Completed') { %>
+                        <span class="badge bg-secondary">
+                          <i class="fa-solid fa-circle-check me-1"></i> Completed
+                        </span>
+                      <% } else { %>
+                        <span class="badge bg-primary">
+                          <i class="fa-solid fa-spinner fa-spin me-1"></i> Processing
+                        </span>
+                      <% } %>
+                      <div class="text-muted" style="font-size: 0.75rem;">
+                        Start: <%= item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : 'N/A' %>
+                      </div>
+                    </td>
+
+                    <!-- Course Fees -->
+                    <td>
+                      <div><%= item.courseFee.toLocaleString() %> Ks</div>
+                      <small class="text-success">Paid: <%= item.initialPaid.toLocaleString() %> Ks</small>
+                    </td>
+
+                    <!-- Payment Status -->
+                    <td>
+                      <span class="badge bg-<%= item.paymentStatus === 'Paid' ? 'success' : item.paymentStatus === 'Credit' ? 'warning text-dark' : 'danger' %>">
+                        <%= item.paymentStatus %>
+                      </span>
+                    </td>
+
+                    <!-- Action Dropdown -->
+                    <td class="text-center">
+                      <div class="dropdown">
+                        <!-- data-bs-popper-config ထည့်သွင်းထားပါသည် -->
+                        <button class="btn btn-light btn-sm rounded-circle" 
+                                type="button" 
+                                data-bs-toggle="dropdown" 
+                                data-bs-popper-config='{"strategy": "fixed"}'
+                                aria-expanded="false" 
+                                style="width: 32px; height: 32px; padding: 0;">
+                          <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                          <% if (item.remainingBalance > 0) { %>
+                            <li>
+                              <a class="dropdown-item py-2 text-success" href="javascript:void(0)" 
+                                onclick="openPayModal('<%= item._id %>', '<%= item.student ? item.student.name : '' %>', '<%= item.course %>', '<%= item.remainingBalance %>')">
+                                <i class="fa-solid fa-hand-holding-dollar me-2"></i> Pay Balance
+                              </a>
+                            </li>
+                          <% } %>
+
+                          <li>
+                            <a class="dropdown-item py-2 text-primary" href="javascript:void(0)" 
+                              onclick="openReceiptModal('<%= item.student ? item.student.studentId : '' %>', '<%= item.student ? item.student.name : '' %>', '<%= item.course %>', '<%= item.className %>', '<%= item.courseFee %>', '<%= item.initialPaid %>', '<%= item.remainingBalance %>', '<%= item.paymentMethod %>', '<%= item.createdAt %>')">
+                              <i class="fa-solid fa-receipt me-2"></i> Receipt
+                            </a>
+                          </li>
+
+                          <li><hr class="dropdown-divider my-1"></li>
+
+                          <li>
+                            <form action="/delete-enrollment/<%= item._id %>" method="POST" onsubmit="return confirm('Are you sure want to delete?');">
+                              <button type="submit" class="dropdown-item py-2 text-danger">
+                                <i class="fa-solid fa-trash me-2"></i> Delete
+                              </button>
+                            </form>
+                          </li>
+                        </ul>
+                      </div>
+                    </td>
+
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic - Student Information Modal -->
+  <div class="modal fade" id="studentViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-address-card me-2"></i>Student Information</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4" id="studentModalContent">
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Searching...</p>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEIPT VOUCHER MODAL WITH WATERMARK & STRICT 1-PAGE TOP-ALIGNED PRINT -->
+  <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white no-print">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-receipt me-2"></i>Payment Receipt</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        
+        <div class="receipt-container p-4">
+          <div class="receipt-watermark" id="r_watermark">IT Training Center</div>
+
+          <div style="position: relative; z-index: 1;">
+            <div class="text-center mb-3">
+              <h4 class="fw-bold mb-1"><i class="fa-solid fa-graduation-cap text-primary me-2"></i>IT Training Center</h4>
+              <p class="text-muted small mb-0">Official Payment Receipt Voucher</p>
+              <hr class="my-2">
+            </div>
+            
+            <div class="row g-2 small mb-3">
+              <div class="col-6"><strong>Student ID:</strong> <span id="r_studentId"></span></div>
+              <div class="col-6 text-end"><strong>Date:</strong> <span id="r_date"></span></div>
+              <div class="col-12"><strong>Student Name:</strong> <span id="r_name" class="fw-bold"></span></div>
+            </div>
+
+            <table class="table table-bordered table-sm small mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>Description</th>
+                  <th class="text-end">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="fw-bold" id="r_course"></div>
+                    <small class="text-muted" id="r_class"></small>
+                  </td>
+                  <td class="text-end fw-bold" id="r_fee"></td>
+                </tr>
+                <tr>
+                  <td class="text-end"><strong>Paid Amount (<span id="r_method" class="text-primary"></span>)</strong></td>
+                  <td class="text-end text-success fw-bold" id="r_paid"></td>
+                </tr>
+                <tr>
+                  <td class="text-end"><strong>Remaining Balance</strong></td>
+                  <td class="text-end text-danger fw-bold" id="r_balance"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between align-items-end mt-4 pt-3 small">
+              <div class="text-center">
+                <p class="mb-0">__________________</p>
+                <small class="text-muted">Student Signature</small>
+              </div>
+              <div class="text-center">
+                <p class="mb-0 fw-bold text-dark font-monospace" style="letter-spacing: 1px;">AkM</p>
+                <p class="mb-0">__________________</p>
+                <small class="text-muted">Authorized Signature</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light no-print">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary fw-bold" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> Print</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW STUDENT MODAL -->
+  <div class="modal fade" id="newStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>New Student Registration</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form action="/register-new" method="POST">
+            <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">Personal Information</h6>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label small fw-bold">Name</label><input type="text" name="name" class="form-control" required></div>
+              <div class="col-md-6 mb-3"><label class="form-label small fw-bold">Father Name</label><input type="text" name="fatherName" class="form-control" required></div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3"><label class="form-label small fw-bold">Phone</label><input type="tel" name="phone" class="form-control" required></div>
+              <div class="col-md-6 mb-3"><label class="form-label small fw-bold">Emergency Call</label><input type="tel" name="emergencyPhone" class="form-control" required></div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-bold">Gender</label>
+                <select name="gender" class="form-select" required>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3"><label class="form-label small fw-bold">Age</label><input type="number" name="age" class="form-control" required></div>
+              <div class="col-md-4 mb-3"><label class="form-label small fw-bold">NRC</label><input type="text" name="nrc" class="form-control" required></div>
+            </div>
+            <div class="mb-3"><label class="form-label small fw-bold">Email</label><input type="email" name="email" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label small fw-bold">Address</label><textarea name="address" class="form-control" rows="2" required></textarea></div>
+
+            <h6 class="text-primary border-bottom pb-2 mb-3 mt-4 fw-bold">First Course Enrollment</h6>
+            
+            <!-- Dynamic Classroom Selector -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-primary">Select Classroom (ဖွင့်လှစ်ထားသော တန်းခွဲ ရွေးရန်)</label>
+              <select id="new_classSelect" class="form-select border-primary" onchange="handleClassroomChange('new')" required>
+                <option value="">-- Classroom ရွေးချယ်ပါ --</option>
+                <% classrooms.forEach(c => { %>
+                  <% const isFull = c.currentEnrolled >= c.studentLimit; %>
+                  <option value="<%= c._id %>" 
+                          data-course="<%= c.course %>"
+                          data-classname="<%= c.className %>"
+                          data-startdate="<%= new Date(c.startDate).toISOString().split('T')[0] %>"
+                          <%= isFull ? 'disabled' : '' %>>
+                    <%= c.course %> - <%= c.className %> (<%= c.currentEnrolled %>/<%= c.studentLimit %>) <%= isFull ? '[FULL]' : '' %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Hidden Input for Form Submission -->
+            <input type="hidden" name="course" id="new_course">
+            <input type="hidden" name="className" id="new_className">
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Course Name</label>
+                <input type="text" id="new_course_display" class="form-control bg-light" readonly placeholder="Auto Fill">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Class Name</label>
+                <input type="text" id="new_classname_display" class="form-control bg-light" readonly placeholder="Auto Fill">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Start Date</label>
+                <input type="date" name="startDate" id="new_startDate" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Course Fee</label>
+                <input type="number" name="courseFee" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Initial Paid</label>
+                <input type="number" name="initialPaid" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Payment Method</label>
+                <select name="paymentMethod" class="form-select" required>
+                  <option value="Cash">Cash</option>
+                  <option value="KPay">KPay</option>
+                  <option value="WaveMoney">WaveMoney</option>
+                  <option value="MMQR">MMQR</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modal-footer px-0 pb-0 pt-3">
+              <button type="submit" class="btn btn-primary fw-bold">Register Student</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT STUDENT MODAL -->
+  <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2"></i>Edit Student Information</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editStudentForm" action="" method="POST">
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Name</label>
+                <input type="text" id="edit_name" name="name" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Father Name</label>
+                <input type="text" id="edit_fatherName" name="fatherName" class="form-control" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Phone</label>
+                <input type="tel" id="edit_phone" name="phone" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Emergency Call</label>
+                <input type="tel" id="edit_emergencyPhone" name="emergencyPhone" class="form-control" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-bold">Gender</label>
+                <select id="edit_gender" name="gender" class="form-select" required>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-bold">Age</label>
+                <input type="number" id="edit_age" name="age" class="form-control" required>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label small fw-bold">NRC</label>
+                <input type="text" id="edit_nrc" name="nrc" class="form-control" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Email</label>
+              <input type="email" id="edit_email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Address</label>
+              <textarea id="edit_address" name="address" class="form-control" rows="2" required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning fw-bold"><i class="fa-solid fa-save me-1"></i> Save Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD EXTRA COURSE MODAL (Old Student) -->
+  <div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-book-medical me-2"></i>Old Student Registration</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form action="/add-course" method="POST" onsubmit="return validateOldStudentForm()">
+            <div class="mb-3 position-relative">
+              <label class="form-label fw-bold text-primary">Student ID / Phone / Name</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-search"></i></span>
+                <input type="text" id="oldStudentSearchInput" class="form-control" placeholder="Search by ID or Name..." autocomplete="off">
+              </div>
+              <div id="searchSuggestions" class="search-suggestion-box d-none"></div>
+              <input type="hidden" name="studentObjId" id="selectedStudentObjId" required>
+              <div id="selectedStudentInfo" class="alert alert-success mt-2 d-none py-2 small">
+                <i class="fa-solid fa-user-check me-1"></i> <strong>Selected Student : </strong> <span id="selectedStudentText"></span>
+              </div>
+            </div>
+
+            <!-- Dynamic Classroom Selector -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark">Select Classroom (ဖွင့်လှစ်ထားသော တန်းခွဲ ရွေးရန်)</label>
+              <select id="old_classSelect" class="form-select border-warning" onchange="handleClassroomChange('old')" required>
+                <option value="">-- Classroom ရွေးချယ်ပါ --</option>
+                <% classrooms.forEach(c => { %>
+                  <% const isFull = c.currentEnrolled >= c.studentLimit; %>
+                  <option value="<%= c._id %>" 
+                          data-course="<%= c.course %>" 
+                          data-classname="<%= c.className %>" 
+                          data-startdate="<%= new Date(c.startDate).toISOString().split('T')[0] %>"
+                          <%= isFull ? 'disabled' : '' %>>
+                    <%= c.course %> - <%= c.className %> (<%= c.currentEnrolled %>/<%= c.studentLimit %>) <%= isFull ? '[FULL]' : '' %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <!-- Hidden Input for Form Submission -->
+            <input type="hidden" name="course" id="old_course">
+            <input type="hidden" name="className" id="old_className">
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Course Name</label>
+                <input type="text" id="old_course_display" class="form-control bg-light" readonly placeholder="Auto Fill">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Class Name</label>
+                <input type="text" id="old_classname_display" class="form-control bg-light" readonly placeholder="Auto Fill">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Start Date</label>
+                <input type="date" name="startDate" id="old_startDate" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Course Fee</label>
+                <input type="number" name="courseFee" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Initial Paid</label>
+                <input type="number" name="initialPaid" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Payment Method</label>
+                <select name="paymentMethod" class="form-select" required>
+                  <option value="Cash">Cash</option>
+                  <option value="KPay">KPay</option>
+                  <option value="WaveMoney">WaveMoney</option>
+                  <option value="MMQR">MMQR</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modal-footer px-0 pb-0 pt-3">
+              <button type="submit" class="btn btn-warning fw-bold">Register</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK PAY BALANCE MODAL -->
+  <div class="modal fade" id="payBalanceModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-wave me-2"></i>Credit Payment</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="payBalanceForm" action="" method="POST">
+          <div class="modal-body">
+            <div class="alert alert-light border mb-3">
+              <p class="mb-1"><strong>Student Name :</strong> <span id="payStudentName" class="text-primary"></span></p>
+              <p class="mb-0"><strong>Course :</strong> <span id="payCourseName"></span></p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold text-danger">Credit Amount (Ks)</label>
+              <input type="text" id="payRemainingDisplay" class="form-control fw-bold bg-light" readonly>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Initial Paid (Ks)</label>
+              <input type="number" name="paymentAmount" id="payAmountInput" class="form-control" required min="1">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Payment Method</label>
+              <select name="paymentMethod" class="form-select" required>
+                <option value="Cash" selected>Cash</option>
+                <option value="KPay">KPay</option>
+                <option value="WaveMoney">WaveMoney</option>
+                <option value="MMQR">MMQR</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success fw-bold"><i class="fa-solid fa-check me-1"></i> Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const existingStudents = JSON.parse('<%- JSON.stringify(existingStudents) %>');
+
+    // Handle Classroom Select Option for Auto-filling
+    function handleClassroomChange(prefix) {
+      const select = document.getElementById(`${prefix}_classSelect`);
+      const selectedOption = select.options[select.selectedIndex];
+
+      if (selectedOption.value) {
+        const course = selectedOption.getAttribute('data-course');
+        const className = selectedOption.getAttribute('data-classname');
+        const startDate = selectedOption.getAttribute('data-startdate');
+
+        document.getElementById(`${prefix}_course`).value = course;
+        document.getElementById(`${prefix}_className`).value = className;
+        document.getElementById(`${prefix}_course_display`).value = course;
+        document.getElementById(`${prefix}_classname_display`).value = className;
+        document.getElementById(`${prefix}_startDate`).value = startDate;
+      } else {
+        document.getElementById(`${prefix}_course`).value = '';
+        document.getElementById(`${prefix}_className`).value = '';
+        document.getElementById(`${prefix}_course_display`).value = '';
+        document.getElementById(`${prefix}_classname_display`).value = '';
+        document.getElementById(`${prefix}_startDate`).value = '';
+      }
+    }
+
+    // Live Search Suggestions Script
+    const searchInput = document.getElementById('oldStudentSearchInput');
+    const suggestionsBox = document.getElementById('searchSuggestions');
+    const selectedObjIdInput = document.getElementById('selectedStudentObjId');
+    const selectedInfoBox = document.getElementById('selectedStudentInfo');
+    const selectedText = document.getElementById('selectedStudentText');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const query = this.value.trim().toLowerCase();
+        suggestionsBox.innerHTML = '';
+        selectedObjIdInput.value = ''; 
+        selectedInfoBox.classList.add('d-none');
+
+        if (query.length === 0) {
+          suggestionsBox.classList.add('d-none');
+          return;
+        }
+
+        const matches = existingStudents.filter(s => 
+          (s.studentId && s.studentId.toLowerCase().includes(query)) ||
+          (s.name && s.name.toLowerCase().includes(query)) ||
+          (s.phone && s.phone.includes(query))
+        );
+
+        if (matches.length > 0) {
+          matches.forEach(s => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `<strong>${s.studentId}</strong> - ${s.name} (${s.phone})`;
+            
+            item.onclick = function() {
+              selectedObjIdInput.value = s._id;
+              selectedText.innerText = `${s.studentId} - ${s.name} (${s.phone})`;
+              selectedInfoBox.classList.remove('d-none');
+              suggestionsBox.classList.add('d-none');
+              searchInput.value = s.studentId;
+            };
+            suggestionsBox.appendChild(item);
+          });
+          suggestionsBox.classList.remove('d-none');
+        } else {
+          suggestionsBox.innerHTML = '<div class="p-2 text-muted small text-center">Not Yet Student!</div>';
+          suggestionsBox.classList.remove('d-none');
+        }
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+          suggestionsBox.classList.add('d-none');
+        }
+      });
+    }
+
+    function validateOldStudentForm() {
+      const selectedId = document.getElementById('selectedStudentObjId').value;
+      if (!selectedId) {
+        alert('Fill All Information, Please!');
+        return false;
+      }
+      return true;
+    }
+
+    // Open Receipt Modal & Set Dynamic Watermark
+    function openReceiptModal(studentId, name, course, className, fee, paid, balance, method, date) {
+      document.getElementById('r_studentId').innerText = studentId;
+      document.getElementById('r_name').innerText = name;
+      document.getElementById('r_course').innerText = course;
+      document.getElementById('r_class').innerText = className;
+      document.getElementById('r_fee').innerText = Number(fee).toLocaleString() + ' Ks';
+      document.getElementById('r_paid').innerText = Number(paid).toLocaleString() + ' Ks';
+      document.getElementById('r_balance').innerText = Number(balance).toLocaleString() + ' Ks';
+      document.getElementById('r_method').innerText = method;
+      document.getElementById('r_date').innerText = new Date(date).toISOString().split('T')[0];
+
+      const watermarkEl = document.getElementById('r_watermark');
+      if (Number(balance) <= 0) {
+        watermarkEl.innerText = "PAID VOUCHER";
+      } else {
+        watermarkEl.innerText = "PARTIAL PAID";
+      }
+
+      const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+      modal.show();
+    }
+
+    // Structured Student Info View Modal
+    async function openStudentViewModal(studentId) {
+      if (!studentId) {
+        alert('ကျောင်းသား အချက်အလက် မရှိပါ။');
+        return;
+      }
+
+      const modalElement = document.getElementById('studentViewModal');
+      let modal = bootstrap.Modal.getInstance(modalElement);
+      if (!modal) {
+        modal = new bootstrap.Modal(modalElement);
+      }
+      
+      const modalContent = document.getElementById('studentModalContent');
+
+      modalContent.innerHTML = `
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted">ကျောင်းသားအချက်အလက်များ ရယူနေပါသည်...</p>
+        </div>
+      `;
+      modal.show();
+
+      try {
+        const response = await fetch(`/api/student-history/${studentId}`);
+        if (!response.ok) throw new Error('Student not found');
+        const data = await response.json();
+
+        const student = data.student;
+        const courses = data.courses;
+
+        let coursesHtml = '';
+        courses.forEach((c, index) => {
+          const startDateFormatted = new Date(c.startDate).toISOString().split('T')[0];
+          const hasBalance = c.remainingBalance > 0;
+
+          coursesHtml += `
+            <div class="border rounded p-3 mb-3 bg-light shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-primary fs-6">#${index + 1} ${c.course} (${c.className})</span>
+                <span class="badge ${c.paymentStatus === 'Paid' ? 'bg-success' : c.paymentStatus === 'Credit' ? 'bg-warning text-dark' : 'bg-danger'} p-2">
+                  ${c.paymentStatus}
+                </span>
+              </div>
+              
+              <div class="row small text-muted mb-2">
+                <div class="col-6"><strong>Start Date : </strong> ${startDateFormatted}</div>
+                <div class="col-6 text-end"><strong>Course Fee : </strong> ${c.courseFee.toLocaleString()} Ks</div>
+                <div class="col-6 text-success"><strong>Initial Paid : </strong> ${c.initialPaid.toLocaleString()} Ks</div>
+                <div class="col-6 text-end text-danger fw-bold"><strong>Credit : </strong> ${c.remainingBalance.toLocaleString()} Ks</div>
+              </div>
+
+              ${hasBalance ? `
+                <hr class="my-2">
+                <div class="bg-white p-2 border rounded">
+                  <span class="fw-bold text-dark small mb-2 d-block"><i class="fa-solid fa-hand-holding-dollar me-1 text-success"></i> Credit Balance</span>
+                  <form onsubmit="submitInlinePayment(event, '${c._id}', '${student.studentId}')" class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                      <input type="number" id="payAmt_${c._id}" class="form-control form-control-sm" placeholder="ပေးချေမည့်ပမာဏ" max="${c.remainingBalance}" value="${c.remainingBalance}" required>
+                    </div>
+                    <div class="col-md-4">
+                      <select id="payMethod_${c._id}" class="form-select form-select-sm" required>
+                        <option value="Cash">Cash</option>
+                        <option value="KPay">KPay</option>
+                        <option value="WaveMoney">WaveMoney</option>
+                        <option value="MMQR">MMQR</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="fa-solid fa-check"></i> Confirm</button>
+                    </div>
+                  </form>
+                </div>
+              ` : `
+                <div class="text-end small text-success fw-bold mt-1">
+                  <i class="fa-solid fa-circle-check"></i> Fully Paid
+                </div>
+              `}
+            </div>
+          `;
+        });
+        
+        modalContent.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded border mb-4">
+            <div>
+              <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-user-graduate me-2"></i>${student.name}</h5>
+              <small class="text-muted">Student ID: ${student.studentId}</small>
+            </div>
+            <button class="btn btn-warning btn-sm fw-bold" onclick="openEditStudentModal('${student._id}')">
+              <i class="fa-solid fa-pen-to-square me-1"></i> Edit Info
+            </button>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="p-3 border rounded bg-white h-100">
+                <h6 class="fw-bold text-secondary border-bottom pb-2 mb-2"><i class="fa-solid fa-address-book me-2"></i>Information</h6>
+                <p class="mb-1 small"><strong>Father Name : </strong> ${student.fatherName}</p>
+                <p class="mb-1 small"><strong>Gender : </strong> ${student.gender} ( ${student.age} Age )</p>
+                <p class="mb-0 small"><strong>NRC : </strong> ${student.nrc}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 border rounded bg-white h-100">
+                <h6 class="fw-bold text-secondary border-bottom pb-2 mb-2"><i class="fa-solid fa-phone me-2"></i>Contact</h6>
+                <p class="mb-1 small"><strong>Phone : </strong> ${student.phone}</p>
+                <p class="mb-1 small text-danger"><strong>Emergency Call : </strong> ${student.emergencyPhone}</p>
+                <p class="mb-1 small"><strong>Email : </strong> ${student.email}</p>
+                <p class="mb-0 small"><strong>Address : </strong> ${student.address}</p>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-book-open me-2"></i>သင်တန်းတက်ရောက်မှု မှတ်တမ်း (${courses.length} ခု)</h6>
+          <div>${coursesHtml}</div>
+        `;
+
+      } catch (err) {
+        modalContent.innerHTML = `<div class="alert alert-danger py-3">အချက်အလက် ရှာမတွေ့ပါ သို့မဟုတ် Error ဖြစ်ပွားနေပါသည်: ${err.message}</div>`;
+      }
+    }
+
+    async function submitInlinePayment(event, enrollmentId, studentId) {
+      event.preventDefault();
+
+      const paymentAmount = document.getElementById(`payAmt_${enrollmentId}`).value;
+      const paymentMethod = document.getElementById(`payMethod_${enrollmentId}`).value;
+
+      try {
+        const res = await fetch('/api/pay-balance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enrollmentId, paymentAmount, paymentMethod })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          await openStudentViewModal(studentId);
+          window.location.reload(); 
+        } else {
+          alert('Payment failed: ' + data.error);
+        }
+      } catch (err) {
+        alert('Error submitting payment: ' + err.message);
+      }
+    }
+
+    function openPayModal(enrollmentId, studentName, courseName, remainingBalance) {
+      const payForm = document.getElementById('payBalanceForm');
+      payForm.action = `/pay-balance/${enrollmentId}`;
+
+      document.getElementById('payStudentName').innerText = studentName;
+      document.getElementById('payCourseName').innerText = courseName;
+      document.getElementById('payRemainingDisplay').value = Number(remainingBalance).toLocaleString() + ' Ks';
+      
+      const amountInput = document.getElementById('payAmountInput');
+      amountInput.max = remainingBalance;
+      amountInput.value = remainingBalance;
+
+      const payModal = new bootstrap.Modal(document.getElementById('payBalanceModal'));
+      payModal.show();
+    }
+
+    async function openEditStudentModal(studentObjId) {
+      const viewModalEl = document.getElementById('studentViewModal');
+      const viewModal = bootstrap.Modal.getInstance(viewModalEl);
+      if (viewModal) viewModal.hide();
+
+      try {
+        const res = await fetch(`/api/student/${studentObjId}`);
+        if (!res.ok) throw new Error('Failed to fetch student data');
+        const student = await res.json();
+
+        document.getElementById('editStudentForm').action = `/edit-student/${studentObjId}`;
+
+        document.getElementById('edit_name').value = student.name || '';
+        document.getElementById('edit_fatherName').value = student.fatherName || '';
+        document.getElementById('edit_phone').value = student.phone || '';
+        document.getElementById('edit_emergencyPhone').value = student.emergencyPhone || '';
+        document.getElementById('edit_gender').value = student.gender || 'Male';
+        document.getElementById('edit_age').value = student.age || '';
+        document.getElementById('edit_nrc').value = student.nrc || '';
+        document.getElementById('edit_email').value = student.email || '';
+        document.getElementById('edit_address').value = student.address || '';
+
+        const editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+        editModal.show();
+      } catch (err) {
+        alert('Error loading student info: ' + err.message);
+      }
+    }
+  </script>
+
+
+
+
+    
+</div>
+
+<%- include('partials/footer') %>

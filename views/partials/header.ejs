@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap & FontAwesome Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    
+
+    <style>
+        /* Page Layout တခုလုံး Screen အပြည့် ကွပ်ရန် */
+        html, body {
+            height: 100vh;
+            overflow: hidden; /* Main window scroll မထွက်စေရန် */
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Flex Container */
+        .d-flex-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Sidebar ကို Screen အမြင့် (100vh) ငြိမ်နေအောင် သတ်မှတ်ခြင်း */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            left: 0;
+            background-color: #212529;
+            color: #fff;
+            transition: all 0.3s ease-in-out;
+            z-index: 1000;
+            overflow-y: auto; /* Sidebar menu တွေ အရမ်းများရင် Sidebar အထဲမှာပဲ scroll ထွက်မည် */
+            flex-shrink: 0;
+        }
+
+        /* Nav Link နှင့် Icon Styling */
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+
+        .sidebar .nav-link i {
+            font-size: 1.2rem !important;
+            width: 24px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* Desktop Collapsed State */
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .brand-text,
+        .sidebar.collapsed .link-text,
+        .sidebar.collapsed .dropdown-text,
+        .sidebar.collapsed .dropdown-toggle::after {
+            display: none !important;
+        }
+
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.75rem 0;
+        }
+
+        .sidebar.collapsed .nav-link i {
+            margin-right: 0 !important;
+            font-size: 1.2rem !important;
+        }
+
+        /* Main Content Wrapper - ညာဘက်အပိုင်းကိုပဲ သီးသန့် Scroll ဆွဲခွင့်ပေးခြင်း */
+        .main-wrapper {
+            flex-grow: 1;
+            height: 100vh;
+            overflow-y: auto; /* ညာဘက် Content ရှည်လာရင် ဒီမှာပဲ Scroll ထွက်မည် */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Mobile View Configuration */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0;
+                bottom: 0;
+                height: 100vh;
+            }
+            .sidebar.mobile-show {
+                left: 0;
+            }
+        }
+    </style>
+
+</head>
+<body>
+
+<!-- <div class="d-flex"> -->
+<div class="d-flex-wrapper">

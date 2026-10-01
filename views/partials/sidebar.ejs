@@ -1,0 +1,67 @@
+<div class="sidebar p-3 d-flex flex-column flex-shrink-0" id="sidebar">
+    <!-- Brand & Mobile Close Button -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <a href="/" class="d-flex align-items-center text-white text-decoration-none fs-4 fw-bold overflow-hidden">
+            <i class="bi bi-person-circle me-3"></i>
+            <span class="brand-text">Admin Panel</span>
+        </a>
+        <!-- Mobile View အတွက် Close (X) ခလုတ် -->
+        <button type="button" class="btn-close btn-close-white d-md-none ms-2" id="sidebarClose" aria-label="Close"></button>
+    </div>
+    <hr>
+
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="/" class="nav-link text-white">
+                <i class="bi bi-speedometer2 me-2"></i>
+                <span class="link-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="/" class="nav-link text-white">
+                <i class="fa-solid fa-user-plus me-2"></i>
+                <span class="link-text">Add New Student</span>
+            </a>
+        </li>
+        <li>
+            <a href="/classrooms" class="nav-link text-white">
+                <i class="bi bi-door-open me-2"></i>
+                <span class="link-text">Classrooms</span>
+            </a>
+        </li>
+        <li>
+            <a href="/staffs" class="nav-link text-white">
+                <i class="bi bi-people me-2"></i>
+                <span class="link-text">Account Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="/payments" class="nav-link text-white">
+                <i class="bi bi-credit-card me-2"></i>
+                <span class="link-text">Payments</span>
+            </a>
+        </li>
+    </ul>
+    <hr>
+
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle fs-4 me-2"></i>
+            <strong class="dropdown-text"><%= user.username %></strong>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark shadow">
+            <li><a class="dropdown-item" href="/">Profile</a></li>
+            <li><a class="dropdown-item" href="/">Account Settings</a></li>
+            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Main Section Wrapper with Top Navbar Toggle -->
+<div class="main-wrapper d-flex flex-column">
+    <nav class="navbar navbar-light bg-white border-bottom px-3">
+        <!-- Toggle Button for Sidebar -->
+        <button class="btn btn-outline-dark" id="sidebarToggle">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+    </nav>

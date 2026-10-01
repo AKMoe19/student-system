@@ -1,0 +1,197 @@
+
+
+
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<!-- Main Panel Content Area -->
+<div class="main-panel">
+  
+  <div class="container mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-4">
+        <h2>Classroom Management</h2>
+    </div>
+      
+      <% if (error) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= error %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <div class="row g-4">
+        
+        <!-- Left Column: Create New Account Form -->
+        <div class="col-lg-4">
+          <div class="card card-custom p-4 bg-white">
+            <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-person-plus-fill me-2"></i>Add New Account</h5>
+            <form action="/staffs/create" method="POST">
+              
+              <div class="mb-3">
+                <label class="form-label fw-bold">Full Name</label>
+                <input type="text" name="name" class="form-control" required placeholder="Enter Account Name">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Email</label>
+                <input type="email" name="email" class="form-control" required placeholder="example@gmail.com">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Phone Number</label>
+                <input type="text" name="phone" class="form-control" required placeholder="09xxxxxxxxx">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Role</label>
+                <select name="role" class="form-select" required>
+                  <option value="Office Staff">Office Staff</option>
+                  <option value="Trainer">Trainer</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">Password</label>
+                <input type="password" name="password" class="form-control" required placeholder="******">
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 fw-bold">
+                <i class="bi bi-check-circle me-1"></i> Create Account
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right Column: Staff & Trainer Accounts Table -->
+        <div class="col-lg-8">
+          <div class="card card-custom p-4 bg-white">
+            <h5 class="fw-bold mb-3"><i class="bi bi-card-heading me-2"></i>Accounts List</h5>
+            
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                
+                <thead class="table-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (staffs && staffs.length > 0) { %>
+                    <% staffs.forEach(item => { %>
+                      <tr>
+                        <td class="fw-bold">
+                          <%= item.name %>
+                        </td>
+                        <td>
+                          <small class="d-block text-muted"><i class="bi bi-envelope me-1"></i><%= item.email %></small>
+                          <small class="d-block text-muted"><i class="bi bi-telephone me-1"></i><%= item.phone %></small>
+                        </td>
+                        <td>
+                          <% if (item.role === 'Trainer') { %>
+                            <span class="badge bg-info text-dark"><i class="bi bi-easel me-1"></i>Trainer</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary"><i class="bi bi-person-badge me-1"></i>Office Staff</span>
+                          <% } %>
+                        </td>
+                        <td>
+                          <% if (item.status === 'Active') { %>
+                            <span class="badge bg-success">Active</span>
+                          <% } else { %>
+                            <span class="badge bg-danger">Inactive</span>
+                          <% } %>
+                        </td>
+                        <td class="text-center">
+
+                          <!-- Edit Button (Triggers Modal) -->
+                          <button class="btn btn-sm btn-outline-warning me-1" 
+                                  data-bs-toggle="modal" 
+                                  data-bs-target="#editModal<%= item._id %>">
+                            <i class="bi bi-pencil-square"></i>
+                          </button>
+
+                          <!-- Delete Button Form -->
+                          <form action="/staffs/delete/<%= item._id %>" method="POST" class="d-inline" onsubmit="return confirm('ဒီအကောင့်ကို ဖျက်မှာ သေချာပါသလား?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </form>
+
+                        </td>
+                      </tr>
+
+                      <!-- Edit Modal For Each Account -->
+                      <div class="modal fade" id="editModal<%= item._id %>" tabindex="-1">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <form action="/staffs/edit/<%= item._id %>" method="POST">
+                              <div class="modal-header">
+                                <h5 class="modal-title fw-bold">Edit Account Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+                              <div class="modal-body">
+                                <div class="mb-3">
+                                  <label class="form-label fw-bold">Name</label>
+                                  <input type="text" name="name" class="form-control" value="<%= item.name %>" required>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-bold">Email</label>
+                                  <input type="email" name="email" class="form-control" value="<%= item.email %>" required>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-bold">Phone</label>
+                                  <input type="text" name="phone" class="form-control" value="<%= item.phone %>" required>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-bold">Role</label>
+                                  <select name="role" class="form-select">
+                                    <option value="Office Staff" <%= item.role === 'Office Staff' ? 'selected' : '' %>>Office Staff</option>
+                                    <option value="Trainer" <%= item.role === 'Trainer' ? 'selected' : '' %>>Trainer</option>
+                                  </select>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-bold">Status</label>
+                                  <select name="status" class="form-select">
+                                    <option value="Active" <%= item.status === 'Active' ? 'selected' : '' %>>Active</option>
+                                    <option value="Inactive" <%= item.status === 'Inactive' ? 'selected' : '' %>>Inactive</option>
+                                  </select>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-bold">New Password (မပြောင်းပါက လွတ်ထားပါ)</label>
+                                  <input type="password" name="password" class="form-control" placeholder="******">
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="5" class="text-center text-muted">အကောင့်များ မရှိသေးပါ။</td>
+                    </tr>
+                  <% } %>
+                </tbody>
+                
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+</div>
+
+<%- include('partials/footer') %>

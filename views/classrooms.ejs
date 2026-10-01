@@ -1,0 +1,393 @@
+
+  <style>
+    body { background-color: #f4f6f9; }
+    .table-responsive { min-height: 300px; }
+  </style>
+<%- include('partials/header') %>
+<%- include('partials/sidebar') %>
+
+<div class="main-panel">
+
+
+  <!-- Main Container -->
+  <div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-4">
+      <h4 class="fw-bold text-primary mb-0"><i class="fa-solid fa-door-open me-2"></i>Class Room Management</h4>
+      <span class="badge bg-primary fs-6">Total : <%= classrooms.length %></span>
+    </div>
+
+    <button class="btn btn-light fw-bold text-primary mb-2" data-bs-toggle="modal" data-bs-target="#createClassroomModal">
+      <i class="fa-solid fa-plus-circle me-1"></i> Create Classroom
+    </button>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-secondary">
+              <tr>
+                <th>#</th>
+                <th>Class Name</th>
+                <th>Course Name</th>
+                <th>Trainer</th>
+                <th>Students</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (classrooms.length === 0) { %>
+                <tr><td colspan="9" class="text-center py-4 text-muted">Classroom အချက်အလက် မရှိသေးပါ။</td></tr>
+              <% } else { %>
+                <% classrooms.forEach((item, index) => { %>
+                  <% 
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const end = new Date(item.endDate);
+                    end.setHours(0, 0, 0, 0);
+
+                    const isStarted = item.trainer && item.trainer !== 'Unknown';
+
+                    let statusBadge = '';
+                    if (!isStarted) {
+                      statusBadge = '<span class="badge bg-info text-dark"><i class="fa-solid fa-sparkles me-1"></i> New</span>';
+                    } else if (today <= end) {
+                      statusBadge = '<span class="badge bg-primary"><i class="fa-solid fa-spinner fa-spin me-1"></i> Processing</span>';
+                    } else {
+                      statusBadge = '<span class="badge bg-secondary"><i class="fa-solid fa-circle-check me-1"></i> Completed</span>';
+                    }
+
+                    const isFull = item.currentEnrolled >= item.studentLimit;
+                  %>
+                  <tr>
+                    <td><%= index + 1 %></td>
+                    <td><strong class="text-dark"><%= item.className %></strong></td>
+                    <td class="text-primary fw-bold"><%= item.course %></td>
+                    
+                    <!-- Trainer Column -->
+                    <td>
+                      <% if (!item.trainer || item.trainer === 'Unknown') { %>
+                        <span class="badge bg-light text-secondary border"><i class="fa-solid fa-user-secret me-1"></i> Unknown</span>
+                      <% } else { %>
+                        <span class="fw-bold text-dark"><i class="fa-solid fa-user-tie me-1 text-primary"></i> <%= item.trainer %></span>
+                      <% } %>
+                    </td>
+
+                    <!-- Seat Column -->
+                    <td>
+                      <span class="badge <%= isFull ? 'bg-danger' : 'bg-dark' %> fs-6 px-3 py-2">
+                        <%= item.currentEnrolled %> / <%= item.studentLimit %>
+                      </span>
+                      <% if (isFull) { %>
+                        <small class="text-danger fw-bold d-block mt-1">Full</small>
+                      <% } %>
+                    </td>
+
+                    <td><i class="fa-regular fa-calendar-check me-1 text-success"></i><%= new Date(item.startDate).toISOString().split('T')[0] %></td>
+                    <td><i class="fa-regular fa-calendar-xmark me-1 text-danger"></i><%= new Date(item.endDate).toISOString().split('T')[0] %></td>
+                    <td><%- statusBadge %></td>
+
+                    <!-- Action Column -->
+                    <!-- <td class="text-center">
+                      <div class="dropdown">
+                        <button class="btn btn-light btn-sm rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px; padding: 0;">
+                          <i class="fa-solid fa-ellipsis-vertical text-secondary"></i>
+                        </button>
+                        
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 150px;">
+                          <li>
+                            <a class="dropdown-item text-success fw-semibold py-2" href="#" onclick="openStartClassModal('<%= item._id %>', '<%= item.className %>', '<%= item.trainer || '' %>'); return false;">
+                              <i class="fa-solid fa-play me-2"></i> Start Class
+                            </a>
+                          </li>
+
+                          <li><hr class="dropdown-divider my-1"></li>
+
+                          <li>
+                            <a class="dropdown-item text-warning fw-semibold py-2" href="#" onclick="openEditClassroomModal('<%= item._id %>'); return false;">
+                              <i class="fa-solid fa-pen-to-square me-2"></i> Edit
+                            </a>
+                          </li>
+                          
+                          <li>
+                            <a class="dropdown-item text-info fw-semibold py-2" href="/classroom/<%= item._id %>/students">
+                              <i class="fa-solid fa-user me-2"></i> View Students
+                            </a>
+                          </li>
+                          <li><hr class="dropdown-divider my-1"></li>
+                          
+                          <li>
+                            <form action="/delete-classroom/<%= item._id %>" method="POST" onsubmit="return confirm('Classroom ကို ဖျက်ရန် သေချာပါသလား?');">
+                              <button type="submit" class="dropdown-item text-danger fw-semibold py-2">
+                                <i class="fa-solid fa-trash me-2"></i> Delete
+                              </button>
+                            </form>
+                          </li>
+                        </ul>
+                      </div>
+                    </td> -->
+
+                    <!-- Action Column -->
+<td class="text-center">
+  <div class="dropdown">
+    <!-- 🔴 data-bs-popper-config ထည့်သွင်းထားပါသည် -->
+    <button class="btn btn-light btn-sm rounded-circle shadow-sm" 
+            type="button" 
+            data-bs-toggle="dropdown" 
+            data-bs-popper-config='{"strategy":"fixed"}' 
+            aria-expanded="false" 
+            style="width: 32px; height: 32px; padding: 0;">
+      <i class="fa-solid fa-ellipsis-vertical text-secondary"></i>
+    </button>
+    
+    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 150px;">
+      <li>
+        <a class="dropdown-item text-success fw-semibold py-2" href="#" onclick="openStartClassModal('<%= item._id %>', '<%= item.className %>', '<%= item.trainer || '' %>'); return false;">
+          <i class="fa-solid fa-play me-2"></i> Start Class
+        </a>
+      </li>
+
+      <li><hr class="dropdown-divider my-1"></li>
+
+      <li>
+        <a class="dropdown-item text-warning fw-semibold py-2" href="#" onclick="openEditClassroomModal('<%= item._id %>'); return false;">
+          <i class="fa-solid fa-pen-to-square me-2"></i> Edit
+        </a>
+      </li>
+      
+      <li>
+        <a class="dropdown-item text-info fw-semibold py-2" href="/classroom/<%= item._id %>/students">
+          <i class="fa-solid fa-user me-2"></i> View Students
+        </a>
+      </li>
+      <li><hr class="dropdown-divider my-1"></li>
+      
+      <li>
+        <form action="/delete-classroom/<%= item._id %>" method="POST" onsubmit="return confirm('Classroom ကို ဖျက်ရန် သေချာပါသလား?');">
+          <button type="submit" class="dropdown-item text-danger fw-semibold py-2">
+            <i class="fa-solid fa-trash me-2"></i> Delete
+          </button>
+        </form>
+      </li>
+    </ul>
+  </div>
+</td>
+                    
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- START CLASS / ASSIGN TRAINER MODAL -->
+  <div class="modal fade" id="startClassModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-play me-2"></i>Start Class & Assign Trainer</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="startClassForm" action="" method="POST">
+          <div class="modal-body">
+            <p class="text-muted small">Class Name : <strong id="start_className_text" class="text-dark"></strong></p>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Select Trainer</label>
+              <select name="trainer" id="start_trainer" class="form-select" required>
+                <option value="">-- Trainer ရွေးပါ --</option>
+                <% if (typeof trainers !== 'undefined' && trainers.length > 0) { %>
+                  <% trainers.forEach(trainer => { %>
+                    <option value="<%= trainer.name %>"><%= trainer.name %> (<%= trainer.email %>)</option>
+                  <% }) %>
+                <% } else { %>
+                  <option value="" disabled>Trainer အကောင့် မရှိသေးပါ။</option>
+                <% } %>
+              </select>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success fw-bold"><i class="fa-solid fa-check me-1"></i> Confirm & Start</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE CLASSROOM MODAL -->
+  <div class="modal fade" id="createClassroomModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-door-plus me-2"></i>Create New Classroom</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/create-classroom" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Class Name</label>
+              <input type="text" name="className" class="form-control" placeholder="e.g. Batch 1" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Course Name</label>
+              <select name="course" class="form-select" required>
+                <option value="Computer Basic">Computer Basic</option>
+                <option value="iOffice">iOffice</option>
+                <option value="Advanced Excel">Advanced Excel</option>
+                <option value="Accounting Excel">Accounting Excel</option>
+                <option value="Graphice Design">Graphice Design</option>
+                <option value="Full Stack Web Development">Full Stack Web Development</option>
+                <option value="Node.js & Express Masterclass">Node.js & Express Masterclass</option>
+                <option value="ASP.NET Core & C# Enterprise">ASP.NET Core & C# Enterprise</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Student Capacity</label>
+              <input type="number" name="studentLimit" class="form-control" value="10" min="1" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Start Date</label>
+                <input type="date" name="startDate" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">End Date</label>
+                <input type="date" name="endDate" class="form-control" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary fw-bold"><i class="fa-solid fa-save me-1"></i> Save Classroom</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT CLASSROOM MODAL -->
+  <div class="modal fade" id="editClassroomModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Classroom</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editClassroomForm" action="" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Class Name</label>
+              <input type="text" id="edit_className" name="className" class="form-control" required>
+            </div>
+
+            <!-- Active Course -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Course Name</label>
+              <select id="edit_course" name="course" class="form-select" required>
+                <option value="Computer Basic">Computer Basic</option>
+                <option value="iOffice">iOffice</option>
+                <option value="Advanced Excel">Advanced Excel</option>
+                <option value="Accounting Excel">Accounting Excel</option>
+                <option value="Graphice Design">Graphice Design</option>
+                <option value="Full Stack Web Development">Full Stack Web Development</option>
+                <option value="Node.js & Express Masterclass">Node.js & Express Masterclass</option>
+                <option value="ASP.NET Core & C# Enterprise">ASP.NET Core & C# Enterprise</option>
+              </select>
+            </div>
+
+            <!-- Selected Trainer -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Trainer</label>
+              <select id="edit_trainer" name="trainer" class="form-select">
+                <option value="Unknown">-- Unassigned --</option>
+                <% if (typeof trainers !== 'undefined' && trainers.length > 0) { %>
+                  <% trainers.forEach(trainer => { %>
+                    <option value="<%= trainer.name %>"><%= trainer.name %> (<%= trainer.email %>)</option>
+                  <% }) %>
+                <% } %>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Student Capacity</label>
+              <input type="number" id="edit_studentLimit" name="studentLimit" class="form-control" min="1" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">Start Date</label>
+                <input type="date" id="edit_startDate" name="startDate" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-bold">End Date</label>
+                <input type="date" id="edit_endDate" name="endDate" class="form-control" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning fw-bold"><i class="fa-solid fa-arrows-rotate me-1"></i> Update Classroom</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> -->
+  <script>
+    function openStartClassModal(id, className, currentTrainer) {
+      document.getElementById('startClassForm').action = `/start-classroom/${id}`;
+      document.getElementById('start_className_text').innerText = className;
+      
+      if (currentTrainer && currentTrainer !== 'Unknown') {
+        document.getElementById('start_trainer').value = currentTrainer;
+      } else {
+        document.getElementById('start_trainer').value = '';
+      }
+
+      const modal = new bootstrap.Modal(document.getElementById('startClassModal'));
+      modal.show();
+    }
+
+    async function openEditClassroomModal(id) {
+      try {
+        const res = await fetch(`/api/classroom/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch data');
+        const data = await res.json();
+
+        document.getElementById('editClassroomForm').action = `/edit-classroom/${id}`;
+        document.getElementById('edit_className').value = data.className;
+        document.getElementById('edit_course').value = data.course;
+        document.getElementById('edit_trainer').value = data.trainer || 'Unknown';
+        document.getElementById('edit_studentLimit').value = data.studentLimit || 10;
+        
+        if (data.startDate) {
+          document.getElementById('edit_startDate').value = new Date(data.startDate).toISOString().split('T')[0];
+        }
+        if (data.endDate) {
+          document.getElementById('edit_endDate').value = new Date(data.endDate).toISOString().split('T')[0];
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('editClassroomModal'));
+        modal.show();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+  </script>
+
+
+
+
+
+
+</div>
+
+<%- include('partials/footer') %>
